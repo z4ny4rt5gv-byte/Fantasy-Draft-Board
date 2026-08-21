@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2026 Mock Draft Board</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --panel:#121a2f;
+    --panel2:#18223d;
+    --text:#f5f7fb;
+    --muted:#9aa7bd;
+    --accent:#78a8ff;
+    --good:#77d49b;
+    --warn:#ffcf70;
+    --bad:#ff8b8b;
+    --border:#2a3657;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,#0a0f1e,#0d1428);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  .wrap{max-width:1500px;margin:auto;padding:22px}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
+    margin-bottom:18px;
+  }
+  h1{font-size:34px;margin:0;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:15px;margin-top:6px}
+  .clock{
+    text-align:right;
+    font-size:14px;color:var(--muted)
+  }
+  .layout{
+    display:grid;grid-template-columns:2.2fr 1fr;gap:18px;
+  }
+  .panel{
+    background:rgba(18,26,47,.94);
+    border:1px solid var(--border);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 14px 34px rgba(0,0,0,.22);
+  }
+  .panel h2{
+    font-size:18px;margin:0;padding:16px 18px;border-bottom:1px solid var(--border);
+  }
+  .filters{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  button{
+    background:#192440;border:1px solid #314161;color:var(--text);
+    border-radius:10px;padding:9px 13px;font-weight:700;cursor:pointer;
+  }
+  button:hover{background:#213052}
+  button.active{background:#365f9f;border-color:#5b86ca}
+  .reset{margin-left:auto}
+  table{width:100%;border-collapse:collapse}
+  th{
+    text-align:left;font-size:12px;color:var(--muted);font-weight:700;
+    padding:10px 12px;border-bottom:1px solid var(--border);letter-spacing:.4px
+  }
+  td{
+    padding:13px 12px;border-bottom:1px solid #202b48;font-size:15px;
+  }
+  tr.player:hover{background:#17233f}
+  .rank{font-weight:800;color:#c7d5ee;width:45px}
+  .name{font-weight:800;font-size:17px}
+  .meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .pos{
+    display:inline-block;min-width:40px;text-align:center;
+    padding:5px 8px;border-radius:8px;background:#22314f;font-size:12px;font-weight:800
+  }
+  .edge.good{color:var(--good);font-weight:800}
+  .edge.mid{color:var(--warn);font-weight:800}
+  .edge.down{color:var(--bad);font-weight:800}
+  .drafted-btn{padding:7px 10px;font-size:12px}
+  tr.is-drafted{opacity:.25;text-decoration:line-through}
+  .side-content{padding:16px}
+  .card{
+    background:var(--panel2);border:1px solid var(--border);
+    border-radius:14px;padding:14px;margin-bottom:12px
+  }
+  .card-title{font-size:12px;color:var(--muted);font-weight:800;letter-spacing:.5px;margin-bottom:7px}
+  .big{font-size:23px;font-weight:900}
+  .targets .t{padding:9px 0;border-bottom:1px solid #283452}
+  .targets .t:last-child{border-bottom:none}
+  .small{font-size:12px;color:var(--muted);margin-top:3px}
+  .footer{color:var(--muted);font-size:12px;text-align:center;margin-top:14px}
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr}
+    h1{font-size:26px}
+    td,th{padding:10px 7px}
+    .hide-sm{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>2026 Mock Draft Board</h1>
+      <div class="sub">Prototype • Full PPR • Custom board view</div>
+    </div>
+    <div class="clock">
+      <div id="now"></div>
+      <div>Click “Drafted” as players leave the board</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>Best Available</h2>
+      <div class="filters">
+        <button class="active" data-pos="ALL">ALL</button>
+        <button data-pos="RB">RB</button>
+        <button data-pos="WR">WR</button>
+        <button data-pos="TE">TE</button>
+        <button data-pos="QB">QB</button>
+        <button class="reset" id="resetBtn">Reset Mock</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Pos</th>
+            <th>Our Rank</th>
+            <th class="hide-sm">Baseline</th>
+            <th class="hide-sm">Tier</th>
+            <th>Edge</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="board"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Draft Room</h2>
+      <div class="side-content">
+        <div class="card">
+          <div class="card-title">TOP AVAILABLE</div>
+          <div class="big" id="topAvailable">—</div>
+          <div class="small" id="topMeta"></div>
+        </div>
+
+        <div class="card targets">
+          <div class="card-title">UPSIDE TARGETS</div>
+          <div class="t"><strong>Tucker Kraft</strong><div class="small">TE target • ecosystem/upside bet</div></div>
+          <div class="t"><strong>Dalton Kincaid</strong><div class="small">TE target • receiving ceiling</div></div>
+          <div class="t"><strong>Kenneth Walker</strong><div class="small">RB upside • talent + role thesis</div></div>
+          <div class="t"><strong>Nico Collins</strong><div class="small">WR ceiling target</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">MOCK TEST</div>
+          <div><strong>What we're judging:</strong></div>
+          <div class="small" style="line-height:1.6;margin-top:6px">
+            Can you identify your pick fast enough on the clock?<br>
+            Does the TV show too much or too little?<br>
+            Are tiers and upside flags more useful than raw rank?<br>
+            Is marking drafted players annoying or easy?
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Prototype board — placeholder order for mock-testing the interface. Replace with final custom rankings once the workflow feels right.</div>
+</div>
+
+<script>
+const players = [
+  {r:1,n:"Ja'Marr Chase",p:"WR",t:"CIN",base:1,tier:1,edge:"—",edgeClass:"mid"},
+  {r:2,n:"Bijan Robinson",p:"RB",t:"ATL",base:2,tier:1,edge:"—",edgeClass:"mid"},
+  {r:3,n:"Jahmyr Gibbs",p:"RB",t:"DET",base:3,tier:1,edge:"—",edgeClass:"mid"},
+  {r:4,n:"Justin Jefferson",p:"WR",t:"MIN",base:4,tier:1,edge:"↑",edgeClass:"good"},
+  {r:5,n:"Puka Nacua",p:"WR",t:"LAR",base:5,tier:1,edge:"—",edgeClass:"mid"},
+  {r:6,n:"Nico Collins",p:"WR",t:"HOU",base:8,tier:2,edge:"↑↑",edgeClass:"good"},
+  {r:7,n:"De'Von Achane",p:"RB",t:"MIA",base:7,tier:2,edge:"↑",edgeClass:"good"},
+  {r:8,n:"Saquon Barkley",p:"RB",t:"PHI",base:6,tier:2,edge:"—",edgeClass:"mid"},
+  {r:9,n:"Ashton Jeanty",p:"RB",t:"LV",base:9,tier:2,edge:"↑",edgeClass:"good"},
+  {r:10,n:"Drake London",p:"WR",t:"ATL",base:10,tier:2,edge:"↑",edgeClass:"good"},
+  {r:11,n:"Chris Olave",p:"WR",t:"NO",base:16,tier:3,edge:"↑↑",edgeClass:"good"},
+  {r:12,n:"Kenneth Walker",p:"RB",t:"SEA",base:18,tier:3,edge:"↑↑",edgeClass:"good"},
+  {r:13,n:"A.J. Brown",p:"WR",t:"PHI",base:12,tier:3,edge:"—",edgeClass:"mid"},
+  {r:14,n:"Trey McBride",p:"TE",t:"ARI",base:14,tier:3,edge:"↑",edgeClass:"good"},
+  {r:15,n:"Ladd McConkey",p:"WR",t:"LAC",base:17,tier:3,edge:"↑",edgeClass:"good"},
+  {r:16,n:"Jonathan Taylor",p:"RB",t:"IND",base:15,tier:3,edge:"—",edgeClass:"mid"},
+  {r:17,n:"Tucker Kraft",p:"TE",t:"GB",base:38,tier:5,edge:"↑↑",edgeClass:"good"},
+  {r:18,n:"Dalton Kincaid",p:"TE",t:"BUF",base:44,tier:5,edge:"↑",edgeClass:"good"},
+  {r:19,n:"Darren Waller",p:"TE",t:"MIA",base:58,tier:6,edge:"↑",edgeClass:"good"},
+  {r:20,n:"Tua Tagovailoa",p:"QB",t:"MIA",base:96,tier:8,edge:"↑",edgeClass:"good"}
+];
+
+let drafted = JSON.parse(localStorage.getItem("drafted2026") || "[]");
+let currentPos = "ALL";
+
+function render(){
+  const tbody = document.getElementById("board");
+  tbody.innerHTML="";
+  const avail = players.filter(x => currentPos==="ALL" || x.p===currentPos);
+  avail.forEach(x=>{
+    const isDrafted = drafted.includes(x.n);
+    const tr = document.createElement("tr");
+    tr.className = "player" + (isDrafted ? " is-drafted" : "");
+    tr.innerHTML = `
+      <td class="rank">${x.r}</td>
+      <td><div class="name">${x.n}</div><div class="meta">${x.t}</div></td>
+      <td><span class="pos">${x.p}</span></td>
+      <td><strong>${x.r}</strong></td>
+      <td class="hide-sm">${x.base}</td>
+      <td class="hide-sm">${x.tier}</td>
+      <td class="edge ${x.edgeClass}">${x.edge}</td>
+      <td><button class="drafted-btn" onclick="toggleDrafted('${x.n.replaceAll("'","\\'")}')">${isDrafted ? "Undo" : "Drafted"}</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const top = players.find(x=>!drafted.includes(x.n));
+  document.getElementById("topAvailable").textContent = top ? top.n : "Board cleared";
+  document.getElementById("topMeta").textContent = top ? `${top.p} • ${top.t} • Tier ${top.tier}` : "";
+}
+
+function toggleDrafted(name){
+  if(drafted.includes(name)) drafted = drafted.filter(x=>x!==name);
+  else drafted.push(name);
+  localStorage.setItem("drafted2026",JSON.stringify(drafted));
+  render();
+}
+
+document.querySelectorAll("[data-pos]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("[data-pos]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentPos = btn.dataset.pos;
+    render();
+  });
+});
+
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  drafted=[];
+  localStorage.removeItem("drafted2026");
+  render();
+});
+
+function updateClock(){
+  document.getElementById("now").textContent = new Date().toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'});
+}
+setInterval(updateClock,1000);
+updateClock();
+render();
+</script>
+</body>
+</html>
